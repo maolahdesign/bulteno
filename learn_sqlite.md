@@ -188,6 +188,18 @@ SQLite 的動態型別系統帶來以下獨特特性：
 - 安裝 DBeaver GUI [Download](https://dbeaver.io/)
 
 
+### install sqlite for windows
+1. download sqlite
+2. 解壓縮
+3. 資料夾更名 sqlite
+4. move folder to c:\
+5. search environment
+6. edit environment system
+7. button environment variables
+8. path -> edit
+9. New -> C:\sqlite
+
+
 ### **實際應用範例**
 以下是一個簡單的表格定義與資料，展示型別使用：
 ```sql
