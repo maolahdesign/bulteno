@@ -184,7 +184,6 @@ SQLite 的動態型別系統帶來以下獨特特性：
 ## Install SQLite
 
 - 安裝 SQLite [Download](https://sqlite.com/download.html)
-- 安裝 DBeaver GUI [Download](https://dbeaver.com/download/lite/)
 - 安裝 DBeaver GUI [Download](https://dbeaver.io/)
 
 
