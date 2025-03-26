@@ -215,6 +215,16 @@ INSERT INTO students VALUES
   (1, 'Alice', 3.8, NULL, 'Good student'),
   (2, 'Bob', 3.2, x'89504E47', 123); -- BLOB 與數字混用
 ```
+** IF NOT EXISTS **
+```
+CREATE TABLE IF NOT EXISTS students (
+  student_id INTEGER PRIMARY KEY,  
+  name TEXT,                     
+  gpa REAL,                       
+  photo BLOB,                    
+  notes TEXT                      
+);
+```
 
 ---
 
@@ -227,8 +237,6 @@ INSERT INTO students VALUES
 3. **大小限制**  
    - 單一值最大約 1 GB（由 `SQLITE_MAX_LENGTH` 控制），但建議避免過大數據以保持性能。
 
----
-
 ### **總結**
 - **功能**：SQLite 提供靈活的動態型別系統，支援五種儲存類別，滿足基本資料庫需求。
 - **特性**：簡單、輕量，型別親和性允許高度自由度。
@@ -236,6 +244,223 @@ INSERT INTO students VALUES
 
 若您需要針對某應用場景（如嵌入式系統）分析 SQLite 型別的應用，或想比較其與其他資料庫的型別系統，請告訴我，我會進一步深化說明！
 
+---
+### 新增 (insert) 及刪除 (delete) 資料
+SQLite 中 INSERT 和 DELETE 的各種方式：
+
+1. INSERT 插入資料的方法
+
+基本插入：
+```sql
+-- 標準插入
+INSERT INTO users (username, email) 
+VALUES ('john_doe', 'john@example.com');
+
+-- 完整欄位插入
+INSERT INTO users (id, username, email) 
+VALUES (1, 'john_doe', 'john@example.com');
+```
+
+批次插入：
+```sql
+-- 一次插入多筆資料
+INSERT INTO users (username, email) VALUES 
+('john_doe', 'john@example.com'),
+('jane_smith', 'jane@example.com'),
+('bob_jones', 'bob@example.com');
+```
+
+預設值插入：
+```sql
+-- 使用預設值
+CREATE TABLE products (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    price DECIMAL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO products (name) VALUES ('Apple');
+```
+
+2. DELETE 刪除資料的方法
+
+基本刪除：
+```sql
+-- 刪除符合條件的所有資料
+DELETE FROM users WHERE username = 'john_doe';
+
+-- 刪除特定 ID 的資料
+DELETE FROM users WHERE id = 5;
+```
+---
+### 更新資料 (UPDATE)
+SQLite 的 UPDATE 語法有多種使用方式：
+
+1. 基本 UPDATE
+```sql
+-- 更新單一欄位
+UPDATE users 
+SET username = 'new_username' 
+WHERE id = 1;
+
+-- 更新多個欄位
+UPDATE users 
+SET 
+    username = 'new_username',
+    email = 'new_email@example.com' 
+WHERE id = 1;
+```
+
+2. 條件更新
+```sql
+-- 多條件更新
+UPDATE products 
+SET price = price * 1.1  -- 加10%
+WHERE category = 'Electronics' 
+AND stock > 0;
+```
+
+3. 更新所有資料
+```sql
+-- 更新表中所有資料
+UPDATE users 
+SET is_active = 1;
+```
+
+注意事項：
+- 更新前務必確認條件
+- 大量更新考慮效能
+- 使用事務處理
+- 注意資料完整性
+
+最佳實踐：
+- 明確指定更新條件
+- 考慮效能和資源消耗
+- 驗證更新結果
+
+---
+## 修改和刪除資料表
+
+1. 修改資料表 (ALTER TABLE)
+
+增加新欄位：
+```sql
+-- 為 users 表格增加新欄位
+ALTER TABLE users 
+ADD COLUMN phone TEXT;
+```
+
+重新命名資料表：
+```sql
+-- 將 users 表格重新命名為 customers
+ALTER TABLE users 
+RENAME TO customers;
+```
+
+2. 刪除資料表
+```sql
+-- 直接刪除資料表
+DROP TABLE users;
+
+-- 如果表格存在則刪除（避免錯誤）
+DROP TABLE IF EXISTS users;
+```
+
+3. 完整範例
+
+建立原始資料表：
+```sql
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    username TEXT,
+    email TEXT
+);
+```
+
+修改資料表結構：
+```sql
+-- 增加新欄位
+ALTER TABLE users 
+ADD COLUMN age INTEGER;
+
+-- 增加預設值的欄位
+ALTER TABLE users 
+ADD COLUMN registration_date DATE DEFAULT CURRENT_DATE;
+```
+
+4. 重新命名欄位（SQLite 限制）
+SQLite 不直接支持 RENAME COLUMN，需要變通方法：
+```sql
+-- 建立新表格
+CREATE TABLE new_users (
+    id INTEGER PRIMARY KEY,
+    full_name TEXT,  -- 替代 username
+    email TEXT
+);
+
+-- 複製資料
+INSERT INTO new_users (id, full_name, email)
+SELECT id, username, email FROM users;
+
+-- 刪除舊表
+DROP TABLE users;
+
+-- 重新命名新表
+ALTER TABLE new_users 
+RENAME TO users;
+```
+
+5. 約束和索引管理
+```sql
+-- 增加唯一約束
+CREATE UNIQUE INDEX idx_unique_email 
+ON users(email);
+
+-- 刪除索引
+DROP INDEX idx_unique_email;
+```
+
+6. 實際業務場景範例
+```sql
+-- 原始使用者表
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    username TEXT,
+    email TEXT
+);
+
+-- 擴充使用者資訊
+ALTER TABLE users 
+ADD COLUMN phone TEXT;
+
+ALTER TABLE users 
+ADD COLUMN address TEXT;
+
+-- 增加註冊日期
+ALTER TABLE users 
+ADD COLUMN register_date DATE DEFAULT CURRENT_DATE;
+```
+
+注意事項：
+- SQLite 的 ALTER TABLE 功能比其他資料庫有限
+- **複雜的結構變更需要重建資料表**
+- **修改表格前務必備份資料**
+- 大型資料表修改可能需要較長時間
+
+建議流程：
+1. 備份原始資料
+2. 規劃修改
+3. 測試修改
+4. 執行修改
+5. 驗證資料完整性
+
+實用提示：
+- 使用 `IF EXISTS` 避免不存在表格的錯誤
+- 謹慎進行不可逆的操作
+- 對於複雜的表格修改，建議使用程式輔助
+
+---
 ## SQLite 鍵（Key）類型說明
 
 SQLite 支援多種類型的鍵（keys）用於資料表設計和關聯管理。以下是 SQLite 中主要的鍵類型：
@@ -248,8 +473,11 @@ CREATE TABLE users (
     user_id INTEGER PRIMARY KEY,
     username TEXT NOT NULL
 );
+/* 
+自動產生的主鍵 product_id
+AUTOINCREMENT
+*/
 
--- 自動增長的主鍵
 CREATE TABLE products (
     product_id INTEGER PRIMARY KEY AUTOINCREMENT,
     product_name TEXT NOT NULL
@@ -349,3 +577,201 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 - 可以設定為唯一索引（UNIQUE INDEX）
 
 SQLite 的鍵結構雖然相比其他大型關聯式資料庫系統較為簡單，但仍提供了足夠的功能來確保資料的完整性和高效查詢。
+
+---
+### 約束（Constraints）
+用來定義資料表中資料的規則和限制。
+
+#### 常見的約束語法：
+
+1. 主鍵約束 (PRIMARY KEY)
+```sql
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE
+);
+```
+
+2. 唯一約束 (UNIQUE)
+```sql
+CREATE TABLE employees (
+    id INTEGER PRIMARY KEY,
+    email TEXT UNIQUE,
+    phone TEXT UNIQUE
+);
+```
+
+3. 非空約束 (NOT NULL)
+```sql
+CREATE TABLE products (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    price DECIMAL NOT NULL
+);
+```
+
+4. 預設值約束 (DEFAULT)
+```sql
+CREATE TABLE orders (
+    id INTEGER PRIMARY KEY,
+    order_date DATE DEFAULT CURRENT_DATE,
+    status TEXT DEFAULT 'Pending',
+    total DECIMAL DEFAULT 0
+);
+```
+
+5. 檢查約束 (CHECK)
+```sql
+CREATE TABLE students (
+    id INTEGER PRIMARY KEY,
+    age INTEGER CHECK (age >= 18 AND age <= 100),
+    score DECIMAL CHECK (score >= 0 AND score <= 100)
+);
+```
+
+6. 外鍵約束 (FOREIGN KEY)
+```sql
+CREATE TABLE orders (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+7. 複合主鍵
+```sql
+CREATE TABLE order_items (
+    order_id INTEGER,
+    product_id INTEGER,
+    quantity INTEGER,
+    PRIMARY KEY (order_id, product_id)
+);
+```
+
+8. 組合約束
+```sql
+CREATE TABLE employees (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE,
+    salary DECIMAL CHECK (salary > 0),
+    age INTEGER CHECK (age >= 18)
+);
+```
+
+9. 外鍵約束（帶有級聯操作）
+```sql
+CREATE TABLE orders (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    FOREIGN KEY (user_id) 
+    REFERENCES users(id) 
+    ON DELETE CASCADE 
+    ON UPDATE CASCADE
+);
+```
+
+完整範例：
+```sql
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    age INTEGER CHECK (age >= 18),
+    registration_date DATE DEFAULT CURRENT_DATE
+);
+
+CREATE TABLE products (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    price DECIMAL CHECK (price > 0),
+    stock INTEGER CHECK (stock >= 0)
+);
+
+CREATE TABLE orders (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    product_id INTEGER,
+    quantity INTEGER CHECK (quantity > 0),
+    order_date DATE DEFAULT CURRENT_DATE,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+```
+
+約束的重要性：
+1. 保證資料完整性
+2. 防止無效資料輸入
+3. 建立資料表之間的關聯
+4. 提供基本的資料驗證
+
+建議：
+- 根據業務邏輯設計約束
+- 合理使用約束來防止不合理的資料
+- 平衡效能和資料完整性
+
+注意事項：
+- SQLite 的約束支援比某些資料庫系統較為簡單
+- 某些複雜的約束可能需要應用層邏輯處理
+
+---
+### 資料處理函式
+在 SQLite 中，有許多實用的資料處理函式可以幫助您操作和轉換資料。以下是一些常用的函式：
+
+1. 字串處理函式
+- `length()`: 計算字串長度
+- `substr()`: 擷取子字串
+- `trim()`: 移除字串左右兩側的空白
+- `upper()`: 將字串轉換為大寫
+- `lower()`: 將字串轉換為小寫
+- `replace()`: 替換字串中的特定內容
+
+2. 數值處理函式
+- `round()`: 四捨五入
+- `abs()`: 取絕對值
+- `ceil()`: 向上取整
+- `floor()`: 向下取整
+- `max()`: 取最大值
+- `min()`: 取最小值
+
+3. 日期和時間函式
+- `date()`: 日期處理
+- `time()`: 時間處理
+- `datetime()`: 日期時間處理
+- `strftime()`: 格式化日期時間
+
+4. 彙總函式
+- `count()`: 計算記錄數
+- `sum()`: 總和
+- `avg()`: 平均值
+- `max()`: 最大值
+- `min()`: 最小值
+
+5. 邏輯函式
+- `coalesce()`: 回傳第一個非 NULL 的值
+- `ifnull()`: 如果為 NULL 則回傳預設值
+- `nullif()`: 比較兩值是否相等，相等則回傳 NULL
+
+6. 型態轉換函式
+- `cast()`: 將值轉換為指定型態
+
+舉例說明:
+
+```sql
+-- 字串處理
+SELECT upper(name), length(name) FROM users;
+
+-- 數值處理
+SELECT round(price, 2) FROM products;
+
+-- 日期處理
+SELECT date('now');
+
+-- 彙總
+SELECT avg(salary) FROM employees;
+
+-- 邏輯函式
+SELECT coalesce(nickname, name) FROM users;
+```
+
+這些函式讓 SQLite 中的資料處理變得更加靈活和高效。

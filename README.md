@@ -658,3 +658,182 @@ CREATE TABLE Student (
 
 這三種關係類型是設計關聯式資料庫結構的基本元素，正確地定義這些關係有助於確保資料的完整性、減少資料冗餘並提高查詢效率。
 
+---
+### 索引（Index）
+資料庫中一種重要的效能優化技術。讓我詳細解釋索引的概念、作用和重要性。
+
+1. 索引是什麼？
+索引可以比喻成書本的目錄。就像目錄能快速找到特定章節，資料庫索引能快速定位特定資料，而不需要逐筆掃描整個資料表。
+
+2. 為什麼需要建立索引？
+- 加快查詢速度：大幅降低資料庫檢索時間
+- 減少系統資源消耗：避免全表掃描
+- 提升查詢效能：特別是在大型資料庫中
+
+3. 索引的主要作用
+- 快速定位資料
+- 減少磁碟I/O操作
+- 改善查詢效率
+- 支持某些特定查詢類型
+
+4. 索引的運作原理
+當建立索引時，資料庫會建立一個額外的資料結構（通常是B-tree），儲存指向原始資料的指標，類似書本的目錄。
+
+5. 索引的類型
+- 主鍵索引（Primary Key）
+- 唯一索引（Unique Index）
+- 複合索引（Composite Index）
+- 部分索引（Partial Index）
+
+6. 建立索引的範例（SQLite語法）
+
+```sql
+-- 在 username 欄位建立索引
+CREATE INDEX idx_username ON users(username);
+
+-- 複合索引
+CREATE INDEX idx_name_age ON users(name, age);
+```
+
+7. 索引的優缺點
+
+優點：
+- 大幅提升查詢速度
+- 支持快速排序
+- 改善資料庫整體性能
+
+缺點：
+- 佔用額外儲存空間
+- 寫入和更新資料時會變慢
+- 索引越多，維護成本越高
+
+8. 何時應該建立索引
+- 經常被查詢的欄位
+- 作為篩選、排序、連接的欄位
+- 主鍵和唯一值欄位
+
+9. 實際效能差異範例
+
+未建立索引（全表掃描）：
+```sql
+-- 可能需要掃描整個表格
+SELECT * FROM users WHERE username = 'john_doe';
+```
+
+建立索引後：
+```sql
+-- 直接定位，大幅提升效能
+SELECT * FROM users WHERE username = 'john_doe';
+```
+
+10. 使用建議
+- 不是所有欄位都需要索引
+- 分析查詢模式
+- 定期檢查和維護索引
+- 使用執行計畫工具評估索引效能
+
+### 實際範例
+用一個實際的商務資料庫範例來展示索引的使用和效果。假設我們有一個電商網站的資料庫。
+
+1. 使用者表格查詢優化
+```sql
+-- 原始表格
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    username TEXT,
+    email TEXT,
+    registration_date DATE,
+    last_login DATETIME
+);
+
+-- 為常用查詢欄位建立索引
+CREATE INDEX idx_username ON users(username);
+CREATE INDEX idx_email ON users(email);
+CREATE INDEX idx_registration_date ON users(registration_date);
+
+-- 快速查詢範例
+-- 找特定使用者
+EXPLAIN QUERY PLAN 
+SELECT * FROM users WHERE username = 'johndoe';
+
+-- 找特定日期註冊的使用者
+EXPLAIN QUERY PLAN
+SELECT * FROM users 
+WHERE registration_date BETWEEN '2023-01-01' AND '2023-12-31';
+```
+
+2. 訂單表格複合索引
+```sql
+CREATE TABLE orders (
+    order_id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    product_id INTEGER,
+    order_date DATE,
+    total_amount DECIMAL,
+    status TEXT
+);
+
+-- 建立複合索引
+CREATE INDEX idx_user_order_date ON orders(user_id, order_date);
+
+-- 快速查詢特定使用者某段時間的訂單
+EXPLAIN QUERY PLAN
+SELECT * FROM orders 
+WHERE user_id = 1000 
+AND order_date BETWEEN '2023-01-01' AND '2023-12-31';
+```
+
+3. 產品表格索引
+```sql
+CREATE TABLE products (
+    product_id INTEGER PRIMARY KEY,
+    name TEXT,
+    category TEXT,
+    price DECIMAL,
+    stock_quantity INTEGER
+);
+
+-- 為查詢頻繁的欄位建立索引
+CREATE INDEX idx_category_price ON products(category, price);
+
+-- 快速找出特定類別價格範圍的產品
+EXPLAIN QUERY PLAN
+SELECT * FROM products 
+WHERE category = 'Electronics' 
+AND price BETWEEN 100 AND 500;
+```
+
+4. 效能比較實驗
+```sql
+-- 未建立索引前的查詢時間
+EXPLAIN QUERY PLAN
+SELECT * FROM users WHERE email = 'test@example.com';
+
+-- 建立索引後
+CREATE INDEX idx_email ON users(email);
+EXPLAIN QUERY PLAN
+SELECT * FROM users WHERE email = 'test@example.com';
+```
+
+5. 刪除索引
+```sql
+-- 如果索引不再需要
+DROP INDEX idx_username;
+```
+
+實際效能提升範例：
+- 未索引：可能需要掃描10萬筆資料
+- 有索引：直接定位，可能只需要幾毫秒
+
+注意事項：
+1. 不要過度建立索引
+2. 索引會增加寫入和更新的時間
+3. 定期分析和維護索引
+4. 使用EXPLAIN QUERY PLAN檢查索引效果
+
+建議工具：
+- SQLite: EXPLAIN QUERY PLAN
+- MySQL: EXPLAIN
+- PostgreSQL: EXPLAIN ANALYZE
+
+索引是資料庫效能優化的關鍵技術，需要根據實際查詢模式和業務需求來設計。
