@@ -485,8 +485,12 @@ CREATE TABLE products (
 
 SQLite 的主鍵特性：
 - 可以使用任何資料型別作為主鍵，但通常使用 INTEGER
-- 當宣告為 `INTEGER PRIMARY KEY` 時，該欄位會自動成為別名為 `rowid` 的內部主鍵
-- 使用 `AUTOINCREMENT` 關鍵字可以確保刪除記錄後，新增的記錄不會重複使用已刪除的 ID 值
+- 當宣告為 `INTEGER PRIMARY KEY` 時，該欄位會**自動成為別名為 `rowid` 的內部主鍵**
+- 不使用 AUTOINCREMENT：當您刪除最大 ID 的記錄時，下一個插入的記錄可能會重用已刪除的 ID
+- 使用 AUTOINCREMENT：系統會保證新 ID 永遠大於表中曾經使用過的最大 ID
+
+大多數情況下，簡單的 INTEGER PRIMARY KEY 就足夠了，除非您的應用程式有特殊需求，要求 ID 永不重用（這在某些安全場景或需要嚴格遞增的情境中可能很重要）。
+此外，**不使用 AUTOINCREMENT 還有些微的性能優勢，因為它不需要維護額外的內部計數器表**。
 
 ### 複合主鍵（COMPOSITE PRIMARY KEY）
 
@@ -534,7 +538,7 @@ CREATE TABLE order_items (
 外鍵特性：
 - 用於建立表格之間的關聯
 - 可以設定在更新或刪除參照記錄時的行為（CASCADE, SET NULL, SET DEFAULT, RESTRICT）
-- 可以對單一欄位或多個欄位（複合外鍵）進行設定
+- 可以對**單一欄位或多個欄位**（複合外鍵）進行設定
 
 ### 唯一鍵（UNIQUE KEY）
 
@@ -555,8 +559,9 @@ CREATE TABLE employee_projects (
 ```
 
 唯一鍵特性：
-- 確保該欄位或欄位組合的值在表格中是唯一的
-- 與主鍵不同，唯一鍵允許 NULL 值（SQLite 中，多個 NULL 值被視為不同值）
+- 確保該欄位或欄位組合的值在表格中是**唯一**的
+
+與主鍵不同，**唯一鍵允許 NULL 值**（SQLite 中，多個 NULL 值被視為不同值）
 
 ### 索引（INDEX）
 
@@ -663,10 +668,7 @@ CREATE TABLE employees (
 CREATE TABLE orders (
     id INTEGER PRIMARY KEY,
     user_id INTEGER,
-    FOREIGN KEY (user_id) 
-    REFERENCES users(id) 
-    ON DELETE CASCADE 
-    ON UPDATE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 ```
 
