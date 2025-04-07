@@ -545,7 +545,7 @@ CREATE TABLE order_items (
 ```sql
 CREATE TABLE customers (
     customer_id INTEGER PRIMARY KEY,
-    email TEXT UNIQUE,
+    email TEXT UNIQU E,
     phone TEXT UNIQUE
 );
 
