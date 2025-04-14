@@ -160,3 +160,5 @@ COMMIT;
 - **Durability**：借閱記錄提交後，即使伺服器斷電，數據仍保留。
 
 ACID 是資料庫的核心保障，SQLite 透過 WAL 與鎖定機制實現這些特性，適合中小型應用。若需更高並發性，可考慮其他資料庫（如 PostgreSQL）。若您想深入某特性或測試特定場景，請告訴我！
+
+SELECT count(*) FROM TblName WHERE pro-id = "54321";
